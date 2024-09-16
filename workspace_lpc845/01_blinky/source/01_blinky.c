@@ -4,7 +4,7 @@
 #include "fsl_debug_console.h"
 #include <stdbool.h>
 
-#define LED_BLUE	1
+#define LED_BLUE 1
 
 /*
  * @brief   Application entry point.

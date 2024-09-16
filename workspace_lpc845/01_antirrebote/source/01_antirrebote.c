@@ -4,7 +4,7 @@
 #include "fsl_debug_console.h"
 #include <stdbool.h>
 
-#define LED_RED 4
+#define LED_RED 2
 #define USER_BUTTON 4
 
 int main(void) {
