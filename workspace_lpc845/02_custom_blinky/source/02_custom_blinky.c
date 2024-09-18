@@ -71,7 +71,7 @@ int main(void) {
     	// Inicio conversion
     	ADC_DoSoftwareTriggerConvSeqA(ADC0);
     	// Espero a terminar la conversion
-    	while(!ADC_GetChannelConversionResult(ADC0, ADC_POT_CH, &adc_info));
+    	while (!ADC_GetChannelConversionResult(ADC0, ADC_POT_CH, &adc_info));
     	timelapse = adc_info.result * 1900 / 4095 + 100;
     }
 
