@@ -1,6 +1,0 @@
-"Task Aware Debugger for GDB" version 11.10.0 (202404041456)
-Copyright 2016-2023 NXP
-==================================
-16:00:50.680 INFO: [ZephyrRTOS] .config file could not be read [C:\Users\estudiante\Documents\EmbebidosUTN\curso-lse\workspace_lpc845\02_sine_wave_generator\Debug\.config (El sistema no puede encontrar el archivo especificado)]
-16:00:50.681 INFO: [TadModel] DSF session ID 42 has started.
-16:00:58.611 INFO: [TadModel] DSF session ID 42 has ended.
