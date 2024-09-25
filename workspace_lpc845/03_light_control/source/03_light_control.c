@@ -5,7 +5,6 @@
 #include "pin_mux.h"
 #include "fsl_gpio.h"
 #include "fsl_common.h"
-#include "fsl_swm.h"
 #include "fsl_debug_console.h"
 
 // Frecuencia de PWM
@@ -48,9 +47,6 @@ int main(void) {
 		I2C_MasterWriteBlocking(I2C1, &cmd, 1, kI2C_TransferDefaultFlag);
 		I2C_MasterStop(I2C1);
 	}
-
-	// Inicializacion de consola
-	BOARD_InitDebugConsole();
 
 	// Conecto la salida 4 del SCT al LED azul
     CLOCK_EnableClock(kCLOCK_Swm);
