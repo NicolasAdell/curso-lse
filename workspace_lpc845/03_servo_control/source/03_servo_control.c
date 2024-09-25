@@ -20,13 +20,6 @@ int main(void) {
     BOARD_InitBootClocks();
     BOARD_InitDebugConsole();
 
-    // Data structure for output configuration
-    gpio_pin_config_t out_config = {kGPIO_DigitalOutput, 1};
-    // Enable GPIO 1 clock
-    GPIO_PortInit(GPIO, 1);
-    // Configure LED_RED as output
-    GPIO_PinInit(GPIO, 1, LED_RED, &out_config);
-
     // Activo clock de matriz de conmutacion
     CLOCK_EnableClock(kCLOCK_Swm);
     // Configuro la funcion de ADC en el canal del potenciometro

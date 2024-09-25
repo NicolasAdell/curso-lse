@@ -2,7 +2,6 @@
 #include "peripherals.h"
 #include "pin_mux.h"
 #include "fsl_debug_console.h"
-#include <stdbool.h>
 
 #define DIGIT_1 8
 #define DIGIT_2 9
