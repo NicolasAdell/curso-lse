@@ -2,7 +2,6 @@
 #include "peripherals.h"
 #include "pin_mux.h"
 #include "fsl_debug_console.h"
-#include <stdbool.h>
 
 #define LED_RED 2
 #define USER_BUTTON 4

@@ -7,37 +7,33 @@
 #include "fsl_swm.h"
 #include "fsl_debug_console.h"
 
-// Frecuencia de PWM
+// PWM frequency
 #define PWM_FREQ 10000
 
-/**
- * @brief Programa principal
- */
 int main(void) {
-	// Inicializacion de consola
 	BOARD_InitDebugConsole();
 
     CLOCK_EnableClock(kCLOCK_Swm);
     SWM_SetMovablePinSelect(SWM0, kSWM_SCT_OUT4, kSWM_PortPin_P1_6);
     CLOCK_DisableClock(kCLOCK_Swm);
 
-    // Eligo el clock para el Timer
+    // Choose timer clock
     uint32_t sctimer_clock = CLOCK_GetFreq(kCLOCK_Fro);
-    // Configuracion del SCT Timer
+    // SCT Timer configuration
     sctimer_config_t sctimer_config;
     SCTIMER_GetDefaultConfig(&sctimer_config);
     SCTIMER_Init(SCT0, &sctimer_config);
 
-    // Configuro el PWM
+    // PWM configuration
     sctimer_pwm_signal_param_t pwm_config = {
-		.output = kSCTIMER_Out_4,		// Salida del Timer
-		.level = kSCTIMER_HighTrue,		// Logica positiva
-		.dutyCyclePercent = 50			// 50% de ancho de pulso
+		.output = kSCTIMER_Out_4,		// Timer output
+		.level = kSCTIMER_HighTrue,		// Positive logic
+		.dutyCyclePercent = 50			// 50% duty cycle
     };
 
-    // Variable para guardar el evento al quese asigna el PWM
+    // Variable to store PWM events
     uint32_t event;
-    // Inicializo el PWM
+    // Initialize PWM
     SCTIMER_SetupPwm(
 		SCT0,
 		&pwm_config,
@@ -46,8 +42,10 @@ int main(void) {
 		sctimer_clock,
 		&event
 	);
-    // Inicializo el Timer
+    // Initialize Timer
     SCTIMER_StartTimer(SCT0, kSCTIMER_Counter_U);
 
     while (true);
+
+    return 0;
 }

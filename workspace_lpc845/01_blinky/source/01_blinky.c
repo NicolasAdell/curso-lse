@@ -2,13 +2,9 @@
 #include "peripherals.h"
 #include "pin_mux.h"
 #include "fsl_debug_console.h"
-#include <stdbool.h>
 
 #define LED_BLUE 1
 
-/*
- * @brief   Application entry point.
-*/
 int main(void) {
 	// Initialization
     BOARD_InitBootClocks();

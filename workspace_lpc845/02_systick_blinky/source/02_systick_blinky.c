@@ -2,14 +2,10 @@
 #include "peripherals.h"
 #include "pin_mux.h"
 #include "fsl_debug_console.h"
-#include <stdbool.h>
 
 #define LED_BLUE 1
 #define LED_D1 29
 
-/*
- * @brief   Application entry point.
-*/
 int main(void) {
 	// Initialization
     BOARD_InitBootClocks();
@@ -28,7 +24,7 @@ int main(void) {
     // Configure LED_RED as output
     GPIO_PinInit(GPIO, 0, LED_D1, &out_config_0);
 
-
+    // Change SysTick configuration
     SysTick_Config(SystemCoreClock / 1000);
 
     while (true);
@@ -37,18 +33,19 @@ int main(void) {
 }
 
 void SysTick_Handler(void) {
-	// Variable para contar interrupciones
+	// Variable to count interruptions
 	static uint16_t i = 0;
 
-	// Incremento contador
+	// Counter increment
 	i++;
 
-	// Verifico si el SysTick se disparo 500 veces (medio segundo)
+	// Verify SysTick has been shot 500 times
 	if(i % 500 == 0) {
-		// Conmuto el LED
+		// Change LED status
 		GPIO_PinWrite(GPIO, 1, LED_BLUE, !GPIO_PinRead(GPIO, 1, LED_BLUE));
 	}
 
+	// Verify SysTick has been shot 1500 times
 	if (i == 1500) {
 		i = 0;
 		GPIO_PinWrite(GPIO, 0, LED_D1, !GPIO_PinRead(GPIO, 0, LED_D1));

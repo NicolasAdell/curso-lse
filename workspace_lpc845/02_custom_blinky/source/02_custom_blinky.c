@@ -6,15 +6,11 @@
 #include "fsl_power.h"
 #include "fsl_adc.h"
 
-#include <stdbool.h>
-
 #define ADC_POT_CH 0
 #define LED_RED 2
 
-/*
- * @brief   Application entry point.
-*/
-int timelapse = 0;
+// Define variable which will allow to change the blinking frequency
+uint16_t timelapse = 0;
 
 int main(void) {
 	// Initialization
@@ -28,29 +24,29 @@ int main(void) {
     // Configure LED_RED as output
     GPIO_PinInit(GPIO, 1, LED_RED, &out_config);
 
-    // Activo clock de matriz de conmutacion
+    // Enable commutation matrix clock
     CLOCK_EnableClock(kCLOCK_Swm);
-    // Configuro la funcion de ADC en el canal del potenciometro
+    // Configure ADC function in the potentiometer hannel
     SWM_SetFixedPinSelect(SWM0, kSWM_ADC_CHN0, true);
-    // Desactivo clock de matriz de conmutacion
+    // Deactivate commutation matrix clock
     CLOCK_DisableClock(kCLOCK_Swm);
 
-    // Elijo clock desde el FRO con divisor de 1 (30MHz)
+    // Choose clock from FRO with 1 as divider (30MHz)
     CLOCK_Select(kADC_Clk_From_Fro);
     CLOCK_SetClkDivider(kCLOCK_DivAdcClk, 1);
 
-    // Prendo el ADC
+    // Turn ADC on
     POWER_DisablePD(kPDRUNCFG_PD_ADC0);
 
-    // Obtengo frecuencia deseada y calibro ADC
+    // Get desired frequency and calibrate ADC
    	uint32_t frequency = CLOCK_GetFreq(kCLOCK_Fro) / CLOCK_GetClkDivider(kCLOCK_DivAdcClk);
    	ADC_DoSelfCalibration(ADC0, frequency);
-   	// Configuracion por defecto del ADC (Synchronous Mode, Clk Divider 1, Low Power Mode true, High Voltage Range)
+   	// Default configuration of the ADC (Synchronous Mode, Clk Divider 1, Low Power Mode true, High Voltage Range)
    	adc_config_t adc_config;
    	ADC_GetDefaultConfig(&adc_config);
-       // Habilito el ADC
+    // Enable ADC
    	ADC_Init(ADC0, &adc_config);
-   	// Configuracion para las conversiones
+   	// Conversion configuration
    	adc_conv_seq_config_t adc_sequence = {
    		.channelMask = 1 << ADC_POT_CH,							// Elijo el canal del potenciometro
    		.triggerMask = 0,										// No hay trigger por hardware
@@ -59,19 +55,21 @@ int main(void) {
    		.interruptMode = kADC_InterruptForEachConversion		// Interrupciones para cada conversion
    	};
 
-   	// Configuro y habilito secuencia A
+   	// Configure and enable A sequence
    	ADC_SetConvSeqAConfig(ADC0, &adc_sequence);
    	ADC_EnableConvSeqA(ADC0, true);
 
+   	// Define system interruption
     SysTick_Config(SystemCoreClock / 1000);
 
     while (true){
-    	// Resultado de conversion
+    	// Conversion result
     	adc_result_info_t adc_info;
-    	// Inicio conversion
+    	// Start conversion
     	ADC_DoSoftwareTriggerConvSeqA(ADC0);
-    	// Espero a terminar la conversion
+    	// Wait for the ending of the conversion
     	while (!ADC_GetChannelConversionResult(ADC0, ADC_POT_CH, &adc_info));
+    	// Adjust the time lapse between cycles
     	timelapse = adc_info.result * 1900 / 4095 + 100;
     }
 
@@ -79,16 +77,16 @@ int main(void) {
 }
 
 void SysTick_Handler(void) {
-	// Variable para contar interrupciones
+	// Variable to handle interruptions
 	static uint16_t i = 0;
 
-	// Incremento contador
+	// Counter increment
 	i++;
 
-	// Verifico si el SysTick se disparo
+	// Verify if SysTick has been shot the corresponding time lapse
 	if(i == timelapse) {
 		i = 0;
-		// Conmuto el LED
+		// Change LED status
 		GPIO_PinWrite(GPIO, 1, LED_RED, !GPIO_PinRead(GPIO, 1, LED_RED));
 	} else if (timelapse < i) {
 		i = 0;
