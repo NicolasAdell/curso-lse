@@ -3,6 +3,7 @@
 	<name>05_display_controller</name>
 	<comment></comment>
 	<projects>
+		<project>freertos</project>
 	</projects>
 	<buildSpec>
 		<buildCommand>

@@ -12,17 +12,21 @@
 #define SEG_E 0
 #define SEG_F 13
 #define SEG_G 15
+#define BTN_1 16
+#define BTN_2 25
+#define BTN_USER 4
 
 void task_display(void *params);
 void display_write(uint8_t number);
-void counter_seconds(void *params);
+void counter(void *params);
 void display_init(void);
 void display_off(void);
 void display_on(uint8_t com);
 void display_segments_off(void);
 void display_segment_on(uint8_t segment);
+void buttons_init();
 
-uint8_t counter = 0;
+Semaphore_Handle_t semphr;
 
 int main(void) {
 	// Clock del sistema de 30 MHz
@@ -33,13 +37,10 @@ int main(void) {
     // Enable GPIO 1 clock
     GPIO_PortInit(GPIO, 0);
 
-    // Configure LED_RED as output
-    GPIO_PinInit(GPIO, 0, BTN_ON, &in_config);
-    GPIO_PinInit(GPIO, 0, BTN_OFF, &in_config);
+    buttons_init():
 
 	display_init();
 
-	Semaphore_Handle_t semphr;
 	semphr = xSemaphoreCreateCounting(
 			  100,
 			  0
@@ -68,21 +69,33 @@ int main(void) {
 
 void task_display(void *params) {
 	while (true) {
+		// Obtengo el valor del Semaphore Counting
+		uint32_t count = uxSemaphoreGetCount(semphr);
+
 		// Muestro el numero
 		display_off();
-		display_write((uint8_t)(counter / 10));
+		display_write((uint8_t)(count / 10));
 		display_on(COM_1);
 		vTaskDelay(10);
 		display_off();
-		display_write((uint8_t)(counter % 10));
+		display_write((uint8_t)(count % 10));
 		display_on(COM_2);
 		vTaskDelay(10);
 	}
 }
 
-void counter_seconds(void *params) {
-	// O b t e n g o e l v a l o r d e l S e m a p h o r e C o u n t i n g
-	uint32tcount = uxSemaphoreGetCount(semphr);
+void counter(void *params) {
+	while (true) {
+		if (!GPIO_PinRead(GPIO, 0, BTN_1)) {
+			xSemaphoreGive(semphr);
+		}
+		if (!GPIO_PinRead(GPIO, 0, BTN_2)) {
+			xSemaphoreTake(semphr);
+		}
+		if (!GPIO_PinRead(GPIO, 0, BTN_USER)) {
+			xQueueReset(semphr);
+		}
+	}
 }
 
 void display_write(uint8_t number) {
@@ -130,5 +143,12 @@ void display_init(void) {
 		GPIO_PinInit(GPIO, 0, pins[i], &out_config);
 		GPIO_PinWrite(GPIO, 0, pins[i], true);
 	}
+}
+
+void buttons_init() {
+    // Configure LED_RED as output
+    GPIO_PinInit(GPIO, 0, BTN_1, &in_config);
+    GPIO_PinInit(GPIO, 0, BTN_2, &in_config);
+    GPIO_PinInit(GPIO, 0, BTN_USER, &in_config);
 }
 
