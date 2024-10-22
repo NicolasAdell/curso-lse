@@ -17,6 +17,8 @@ uint32_t duty_cycle;
 // Variable to store PWM events
 uint32_t event;
 
+void SysTick_Handler(void);
+
 int main(void) {
 	// Start at 30 MHz
 	BOARD_BootClockFRO30M();

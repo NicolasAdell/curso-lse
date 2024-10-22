@@ -6,6 +6,8 @@
 #define LED_BLUE 1
 #define LED_D1 29
 
+void SysTick_Handler(void);
+
 int main(void) {
 	// Initialization
     BOARD_InitBootClocks();

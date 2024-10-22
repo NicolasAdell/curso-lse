@@ -15,6 +15,8 @@ uint8_t servo_duty_signal = 50;
 // Variable to store PWM value
 uint32_t event;
 
+void SysTick_Handler(void);
+
 int main(void) {
 	// Initialization
     BOARD_InitBootClocks();

@@ -12,6 +12,8 @@
 // Define variable which will allow to change the blinking frequency
 uint16_t timelapse = 0;
 
+void SysTick_Handler(void);
+
 int main(void) {
 	// Initialization
     BOARD_InitBootClocks();

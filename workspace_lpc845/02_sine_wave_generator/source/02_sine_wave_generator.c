@@ -12,6 +12,8 @@
 
 int signal_frequency;
 
+void SysTick_Handler(void);
+
 int main(void) {
 	signal_frequency = 1000;
 
