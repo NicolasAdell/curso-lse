@@ -1,5 +1,9 @@
+#include "clock_config.h"
+#include "peripherals.h"
+#include "pin_mux.h"
 #include "board.h"
 #include "FreeRTOS.h"
+#include "fsl_debug_console.h"
 #include "task.h"
 #include "semphr.h"
 
@@ -26,18 +30,16 @@ void display_segments_off(void);
 void display_segment_on(uint8_t segment);
 void buttons_init();
 
-Semaphore_Handle_t semphr;
+SemaphoreHandle_t semphr;
 
 int main(void) {
 	// Clock del sistema de 30 MHz
 	BOARD_BootClockFRO30M();
 
-    gpio_pin_config_t in_config = {kGPIO_DigitalInput};
-
     // Enable GPIO 1 clock
     GPIO_PortInit(GPIO, 0);
 
-    buttons_init():
+    buttons_init();
 
 	display_init();
 
@@ -56,13 +58,14 @@ int main(void) {
 	);
 
 	xTaskCreate(
-		counter_seconds,			// Callback de la tarea
+		counter,			// Callback de la tarea
 		"Counter",				// Nombre
 		configMINIMAL_STACK_SIZE,	// Stack reservado
 		NULL,						// Sin parametros
 		tskIDLE_PRIORITY + 1UL,		// Prioridad
 		NULL						// Sin handler
 	);
+
 
 	vTaskStartScheduler();
 }
@@ -89,12 +92,13 @@ void counter(void *params) {
 		if (!GPIO_PinRead(GPIO, 0, BTN_1)) {
 			xSemaphoreGive(semphr);
 		}
-		if (!GPIO_PinRead(GPIO, 0, BTN_2)) {
-			xSemaphoreTake(semphr);
+		else if (!GPIO_PinRead(GPIO, 0, BTN_2)) {
+			xSemaphoreTake(semphr, 10);
 		}
-		if (!GPIO_PinRead(GPIO, 0, BTN_USER)) {
+		else if (!GPIO_PinRead(GPIO, 0, BTN_USER)) {
 			xQueueReset(semphr);
 		}
+		vTaskDelay(100);
 	}
 }
 
@@ -146,6 +150,7 @@ void display_init(void) {
 }
 
 void buttons_init() {
+    gpio_pin_config_t in_config = {kGPIO_DigitalInput};
     // Configure LED_RED as output
     GPIO_PinInit(GPIO, 0, BTN_1, &in_config);
     GPIO_PinInit(GPIO, 0, BTN_2, &in_config);
