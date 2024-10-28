@@ -18,9 +18,9 @@ uint32_t event;
 void SysTick_Handler(void);
 
 int main(void) {
+	BOARD_InitDebugConsole();
 	// Initialization
     BOARD_InitBootClocks();
-    BOARD_InitDebugConsole();
 
     // Enable clock commutation matrix
     CLOCK_EnableClock(kCLOCK_Swm);
@@ -72,7 +72,7 @@ int main(void) {
     // Configure PWM
     sctimer_pwm_signal_param_t pwm_config = {
 		.output = kSCTIMER_Out_4,		// Salida del Timer
-		.level = kSCTIMER_HighTrue,		// Logica negativa
+		.level = kSCTIMER_HighTrue,		// Logica positiva
 		.dutyCyclePercent = 50			// 50% de ancho de pulso
     };
 

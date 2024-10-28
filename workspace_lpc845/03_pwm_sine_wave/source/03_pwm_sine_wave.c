@@ -12,6 +12,8 @@
 
 int main(void) {
 	BOARD_InitDebugConsole();
+	// Start at 30 MHz
+	BOARD_BootClockFRO30M();
 
     CLOCK_EnableClock(kCLOCK_Swm);
     SWM_SetMovablePinSelect(SWM0, kSWM_SCT_OUT4, kSWM_PortPin_P1_6);
