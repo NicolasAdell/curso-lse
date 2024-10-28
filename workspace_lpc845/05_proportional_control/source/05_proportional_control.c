@@ -14,18 +14,6 @@
 #include "queue.h"
 #include <math.h>
 
-#define COM_1 8
-#define COM_2 9
-#define SEG_A 10
-#define SEG_B 11
-#define SEG_C 6
-#define SEG_D 14
-#define SEG_E 0
-#define SEG_F 13
-#define SEG_G 15
-#define BTN_1 16
-#define BTN_2 25
-#define BTN_USER 4
 #define ADC_POT1_CH 0
 #define ADC_POT2_CH 8
 #define PWM_FREQ 1000
