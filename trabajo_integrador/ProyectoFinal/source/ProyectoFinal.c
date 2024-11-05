@@ -42,7 +42,7 @@
 // Variable to store PWM events
 uint32_t event;
 
-// Cola para datos del ADC
+// Queue to store setpoint
 QueueHandle_t queue_setpoint;
 // Cola para datos del ADC
 QueueHandle_t queue_light_intensity;
