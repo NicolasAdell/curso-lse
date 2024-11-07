@@ -31,9 +31,7 @@
 #define BTN_1 16
 #define BTN_2 25
 #define BTN_USER 4
-// Set PWM frequency
 #define PWM_FREQ 1000
-// BH1750 direction
 #define BH1750_ADDR	0x5c
 #define BTN_1 16
 #define BTN_2 25
@@ -44,13 +42,17 @@ uint32_t event;
 
 // Queue to store setpoint
 QueueHandle_t queue_setpoint;
-// Cola para datos del ADC
+// Queue to stores light intensity
 QueueHandle_t queue_light_intensity;
+// Queue to store duty cycle
 QueueHandle_t queue_duty_cycle;
+// Queue to store show setpoint variable
 QueueHandle_t queue_show_setpoint;
 
+// Create semaphore for counting
 SemaphoreHandle_t semphr;
 
+// Function prototypes
 void task_measure_light(void *params);
 void task_display(void *params);
 void task_change_setpoint(void *params);
@@ -72,16 +74,18 @@ void display_segment_on(uint8_t segment);
 SemaphoreHandle_t semphr;
 
 int main(void) {
-	// Clock del sistema de 30 MHz
+	// 30 MHz system clock
 	BOARD_BootClockFRO30M();
 
     project_init();
 
+    // Semaphore creation to count
 	semphr = xSemaphoreCreateCounting(
-			  50,
-			  0
+			  75,
+			  25
 			 );
 
+	// Create tasks
 	xTaskCreate(
 		task_button,				// Callback de la tarea
 		"ChangeDisplayShow",				// Nombre
@@ -136,21 +140,25 @@ int main(void) {
 		NULL						// Sin handler
 	);
 
+	// Print configuration of parameters
 	PRINTF("Time (ms) | Light | Setpoint | Bright\n");
 
 	vTaskStartScheduler();
 }
 
+// Task to store value button to see if it wants to show setpoint
 void task_button(void *params) {
 	bool show_setpoint;
 
 	while (true) {
+		// Check if button user is pressed
 		if (!GPIO_PinRead(GPIO, 0, BTN_USER)) {
 			show_setpoint = !show_setpoint;
 		}
 
 		vTaskDelay(85);
 
+		// Send show setpoint boolean
 		xQueueOverwrite(
 						queue_show_setpoint,
 						&show_setpoint
@@ -158,6 +166,8 @@ void task_button(void *params) {
 
 	}
 }
+
+// Task to show in display
 void task_display(void *params) {
 	bool show_setpoint;
 	uint32_t setpoint;
@@ -165,7 +175,7 @@ void task_display(void *params) {
 	uint8_t value;
 
 	while (true) {
-		// Definir value
+		// Get variables from queues
 		xQueuePeek(
 					queue_setpoint,
 					&setpoint,
@@ -184,17 +194,20 @@ void task_display(void *params) {
 					100
 					);
 
+		// Check if setpoint wants to be shown
 		if (show_setpoint) {
 			value = setpoint;
 		} else {
 			value = light_intensity;
 		}
 
-		// Muestro el numero
+		// Show number
 		display_off();
+		// Turn on digit on
 		display_write((uint8_t)(value / 10));
 		display_on(COM_1);
 		vTaskDelay(5);
+		// Turn the other digit on
 		display_off();
 		display_write((uint8_t)(value % 10));
 		display_on(COM_2);
@@ -210,10 +223,11 @@ void task_measure_light(void *params) {
 			uint8_t res[2] = {0};
 			I2C_MasterReadBlocking(I2C1, res, 2, kI2C_TransferDefaultFlag);
 			I2C_MasterStop(I2C1);
-			// Return result
+			// Calculate luxes
 			float lux = ((res[0] << 8) + res[1]) / 1.2;
-			//PRINTF("LUX : %d \r\n",(uint16_t) lux);
+			// Calculate light porcentage
 			uint8_t lux_percentage = lux * 100 / 20000;
+			// Send light intensity
 			xQueueOverwrite(
 							queue_light_intensity,
 							&lux_percentage
@@ -225,17 +239,23 @@ void task_measure_light(void *params) {
 
 void task_change_setpoint(void *params) {
 	while (true) {
+		// Check if button 1 is pressed
 		if (!GPIO_PinRead(GPIO, 0, BTN_1)) {
+			// Sum up value
 			xSemaphoreGive(semphr);
 		}
+		// Check if button 2 is pressed
 		else if (!GPIO_PinRead(GPIO, 0, BTN_2)) {
+			// Decrease counting
 			xSemaphoreTake(semphr, 10);
 		}
 
 		vTaskDelay(85);
 
-		uint32_t setpoint = uxSemaphoreGetCount(semphr) + 25;
+		// Get setpoint
+		uint32_t setpoint = uxSemaphoreGetCount(semphr);
 
+		// Send setpoint
 		xQueueOverwrite(
 						queue_setpoint,
 						&setpoint
@@ -250,25 +270,30 @@ void task_print_information(void *params) {
 	uint8_t bright_led_intensity;
 
 	while (true) {
+		// Get setpoint
 		xQueuePeek(
 						queue_setpoint,
 						&setpoint,
 						100
 						);
+		// Get light intensity
 		xQueuePeek(
 						queue_light_intensity,
 						&light_intensity,
 						100
 						);
 
+		// Get duty cycle
 		xQueuePeek(
 						queue_duty_cycle,
 						&bright_led_intensity,
 						100
 						);
 
+		// Get current time
 		uint32_t time  = xTaskGetTickCount();
 
+		// Print values
 		PRINTF("%8d | %3d%% | %3d%% | %3d%%\n", time, light_intensity, setpoint, bright_led_intensity);
 		vTaskDelay(1000);
 	}
@@ -282,7 +307,9 @@ void task_change_blue_led_intensity(void *params) {
 		// Wait to the end of conversion
 		while (!ADC_GetChannelConversionResult(ADC0, ADC_POT_CH, &adc_info));
 		uint8_t duty_cycle = adc_info.result * 100 / 4095;
+		// Upload duty cycle
 		SCTIMER_UpdatePwmDutycycle(SCT0, kSCTIMER_Out_4, duty_cycle, event);
+		// Send duty cycle
 		xQueueOverwrite(
 						queue_duty_cycle,
 						&duty_cycle
@@ -292,6 +319,7 @@ void task_change_blue_led_intensity(void *params) {
 }
 
 void project_init() {
+	// Initialize all periphericals
 	i2c_init();
 	pwm_init();
 	adc_init();
@@ -331,6 +359,7 @@ void i2c_init() {
 		I2C_MasterStop(I2C1);
 	}
 
+	// Create queue to send light intensity
 	queue_light_intensity = xQueueCreate(1, sizeof(uint8_t));
 }
 
@@ -371,7 +400,7 @@ void adc_init() {
 		.interruptMode = kADC_InterruptForEachConversion		// Interrupciones para cada conversion
 	};
 
-	// Configuro and enable A sequence
+	// Configure and enable A sequence
 	ADC_SetConvSeqAConfig(ADC0, &adc_sequence);
 	ADC_EnableConvSeqA(ADC0, true);
 }
@@ -380,7 +409,7 @@ void display_init(void) {
     // Enable GPIO 1 clock
     GPIO_PortInit(GPIO, 0);
 
-	// Inicializo los pines como salidas
+	// Initialize pins as outputs
 	gpio_pin_config_t out_config = {kGPIO_DigitalOutput, true};
 	uint32_t pins[] = {SEG_A, SEG_B, SEG_C, SEG_D, SEG_E, SEG_F, SEG_G, COM_1, COM_2};
 	for(uint8_t i = 0; i < sizeof(pins) / sizeof(uint32_t); i++) {
@@ -391,15 +420,13 @@ void display_init(void) {
 
 void buttons_init() {
     gpio_pin_config_t in_config = {kGPIO_DigitalInput};
-    // Configure LED_RED as output
+    // Set LED_RED as output
     GPIO_PinInit(GPIO, 0, BTN_1, &in_config);
     GPIO_PinInit(GPIO, 0, BTN_2, &in_config);
+    // Queue to send show setpoint boolean
     queue_show_setpoint = xQueueCreate(1, sizeof(bool));
+    // Queue to send setpoint
     queue_setpoint = xQueueCreate(1, sizeof(uint32_t));
-	semphr = xSemaphoreCreateCounting(
-			  100,
-			  0
-			 );
 }
 
 void pwm_init() {
@@ -434,38 +461,36 @@ void pwm_init() {
 
     // Timer initialize
     SCTIMER_StartTimer(SCT0, kSCTIMER_Counter_U);
-    // Create system interruption
-    //SysTick_Config(SystemCoreClock / 1000);
-
+    // Create queue to send duty cycle
     queue_duty_cycle = xQueueCreate(1, sizeof(uint8_t));
 }
 
 void display_write(uint8_t number) {
-	// Array con valores para los pines
+	// Array values for numbers
 	uint8_t values[] = {~0x3f, ~0x6, ~0x5b, ~0x4f, ~0x66, ~0x6d, ~0x7d, ~0x7, ~0x7f, ~0x6f};
-	// Array con los segmentos
+	// Array for segments
 	uint32_t pins[] = {SEG_A, SEG_B, SEG_C, SEG_D, SEG_E, SEG_F, SEG_G};
 
 	for(uint8_t i = 0; i < sizeof(pins) / sizeof(uint32_t); i++) {
-		// Escribo el valor del bit en el segmento que corresponda
+		// Write bit value in the corresponding number
 		uint32_t val = (values[number] & (1 << i))? 1 : 0;
 		GPIO_PinWrite(GPIO, 0, pins[i], val);
 	}
 }
 
 void display_off(void) {
-	// Pongo en uno ambos anodos
+	// Set anodes to one
 	GPIO_PinWrite(GPIO, 0, COM_1, true);
 	GPIO_PinWrite(GPIO, 0, COM_2, true);
 }
 
 void display_on(uint8_t com) {
-	// Pongo un cero en el anodo
+	// Set an anode to zero
 	GPIO_PinWrite(GPIO, 0, com, false);
 }
 
 void display_segments_off(void) {
-	// Pongo un uno en cada segmento
+	// Set each pin to one
 	uint8_t pins[] = {SEG_A, SEG_B, SEG_C, SEG_D, SEG_E, SEG_F, SEG_G};
 	for(uint8_t i = 0; i < sizeof(pins) / sizeof(uint8_t); i++) {
 		GPIO_PinWrite(GPIO, 0, pins[i], true);
@@ -473,6 +498,6 @@ void display_segments_off(void) {
 }
 
 void display_segment_on(uint8_t segment) {
-	// Pongo un cero en el segmento indicado
+	// Set a zero in the indicated segment
 	GPIO_PinWrite(GPIO, 0, segment, false);
 }
